@@ -11,6 +11,7 @@
     --os-windows-icon-dodge: 1;
     --image_url: '';
     --is_light: 0;
+    --move_buddy_list: 0px;
 }
 
 div#popover-container::before {
@@ -975,6 +976,11 @@ select {
 
 /* Friend list */
 
+.body-container--windows .buddy-list-iframe {
+    margin-top: 48px;
+    margin-bottom: var(--move_buddy_list);
+}
+
 .buddy-list-title h3 {
     font-weight: 500;
     color: var(--modspotify_secondary_fg);
@@ -1332,6 +1338,7 @@ button#player-button-repeat,
     width: var(--left-sidebar-item-height);
     height: var(--left-sidebar-item-height);
     background-size: cover;
+    background-position: center;
     border-radius: 50%;
     margin: 0 auto;
 }
@@ -1539,6 +1546,10 @@ button[data-button=add-recommendation] {
 
 #video-player::before {
     z-index: +1;
+    opacity: 0;
+}
+
+.video-full-screen-art  #video-player::before {
     opacity: calc(0.5 + 0.2 * var(--is_light, 0));
 }
 
