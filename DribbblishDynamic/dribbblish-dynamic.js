@@ -56,9 +56,9 @@ waitForElement([".LeftSidebar", ".LeftSidebar__section--rootlist .SidebarList__l
 
             if (href.indexOf("playlist-folder") != -1) {
                 const button = item.getElementsByTagName("button")[0]
-                button.classList.add("Button", "Button--style-icon-background", "Button--size-28",);
+                button.classList.add("Button", "Button--style-icon-background", "Button--folder");
                 item.setAttribute("data-tooltip", item.innerText);
-                link.firstChild.innerText = item.innerText.slice(0, 3);
+                replaceTextWithIcon(link.firstChild, 'collection');
                 continue;
             }
 
@@ -121,7 +121,7 @@ waitForElement([".LeftSidebar", ".LeftSidebar__section--rootlist .SidebarList__l
         }
 
         if (iconName) {
-            el.classList.add(`spoticon-${iconName}-24`);
+            el.classList.add(iconName);
         }
 
         el.parentNode.setAttribute("data-tooltip", el.innerText);
@@ -136,9 +136,7 @@ waitForElement([".LeftSidebar", ".LeftSidebar__section--rootlist .SidebarList__l
                 case "genius":                  return "lyrics";
                 case "JQBX":                    return "addsuggestedsong";
                 case "bookmark":                return "tag";
-                case "reddit":                  return "discover";
-                case "made-for-you":            return "user";
-                case "recently-played":         return "time";
+                case "made-for-you":            return "user-circle";
                 case "collection-songs":        return "heart";
                 case "collection:albums":       return "album";
                 case "collection:artists":      return "artist";
@@ -153,12 +151,20 @@ waitForElement([".LeftSidebar", ".LeftSidebar__section--rootlist .SidebarList__l
                 //case "browse":                return "browse";
                 //case "radio":                 return "radio";
             }})(item.href.replace("spotify:app:", ""));
+            if (icon) {
+                icon = `spoticon-${icon}-24`;
+            }
+            else icon = ((app) => {switch (app) {
+                case "reddit":                  return "icomoon-reddit";
+                case "recently-played":         return "icomoon-recently-played";
+            }})(item.href.replace("spotify:app:", ""));
 
             replaceTextWithIcon(item.firstChild, icon);
         });
 
     waitForElement([`[href="spotify:app:recently-played"]`], ([query]) => {
         replaceTextWithIcon(query.firstChild, "time");
+        query.setAttribute("data-tooltip", 'Recently Played');
     });
 });
 
@@ -225,7 +231,8 @@ waitForElement([".artist"], (queries) => {
     queries[0].append(nearArtistSpan);
 });
 
-function updateColors(root) {    
+function updateColors(root) {
+    if( root===null) return;
     let colHex = mainColor
     if( isLightBg ) colHex = LightenDarkenColor(colHex, -5) // vibrant color is always too bright for white bg mode
     let colRGB = hexToRgb(colHex)
@@ -264,32 +271,15 @@ function updateColors(root) {
 }
 
 function updateColorsAllIframes() {
-    // playing queue
-    if (document.querySelector("#app-queue")!=null) updateColors(document.querySelector("#app-queue").contentDocument.documentElement)
-    // collection (podcast, recent, etc.)
-    if (document.querySelector("#app-collection")!=null) updateColors(document.querySelector("#app-collection").contentDocument.documentElement)
-    // collection (local files)
-    if (document.querySelector("#app-collection-songs")!=null) updateColors(document.querySelector("#app-collection-songs").contentDocument.documentElement)
-    // buddy list
-    if (document.querySelector("#iframe-buddy-list")!=null) updateColors(document.querySelector("#iframe-buddy-list").contentDocument.documentElement)
-    // playlist
-    if (document.querySelector("#app-playlist")!=null) updateColors(document.querySelector("#app-playlist").contentDocument.documentElement)
-    // search
-    if (document.querySelector("#app-search")!=null) updateColors(document.querySelector("#app-search").contentDocument.documentElement)
-    // genius
-    if (document.querySelector("#app-genius")!=null) updateColors(document.querySelector("#app-genius").contentDocument.documentElement)
-    // browse
-    if (document.querySelector("#app-browse")!=null) updateColors(document.querySelector("#app-browse").contentDocument.documentElement)
-    // genre
-    if (document.querySelector("#app-genre")!=null) updateColors(document.querySelector("#app-genre").contentDocument.documentElement)
-    // artist
-    if (document.querySelector("#app-artist")!=null) updateColors(document.querySelector("#app-artist").contentDocument.documentElement)
-    
     // code below works but then generate many errors on page change.
-    frames = document.getElementsByTagName("iframe");
+    let frames = document.getElementsByTagName("iframe");
     for (i=0; i<frames.length; ++i) {
         console.log(i+". "+frames[i].id)
-        updateColors(frames[i].contentDocument.documentElement)
+        try {
+            updateColors(frames[i].contentDocument.documentElement)
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
 
@@ -350,10 +340,11 @@ async function songchange() {
 }
 
 Spicetify.Player.addEventListener("songchange", songchange)
-Spicetify.Player.addEventListener("appchange", ({"data": data}) => {
-    //console.log(data.container)
-    setTimeout(updateColorsAllIframes, 200)
-})
+
+window.addEventListener("message", ({data: info}) => {
+    if( info.type=="navigation_request_state" )
+        setTimeout(updateColorsAllIframes, 200)
+});
 
 // Add "About" item in profile menu
 new Spicetify.Menu.Item("About", false, () => window.open("spotify:app:about")).register();
